@@ -1,0 +1,189 @@
+<html>
+
+<head>
+	<title>Capture</title>
+	<script src="/js/jquery-2.2.3.min.js"></script>
+	<script>
+		function hide_spinner() {
+			if(jQuery.active <= 1) {
+				$("#spinner").hide();
+			}
+		}
+		function show_spinner() {
+			$("#spinner").show();
+		}
+	</script>
+</head>
+
+<body>
+	<h2 style="float:left;">Welcome to Capture!</h2>
+	<img id="spinner" src="/images/hourglass.gif" alt="" style="margin-left:10px;margin-top:15px;float:left;display:none;" />
+	<div style="clear:both;"></div>
+
+	<div style="width:400px;border: 1px solid #ccc;padding:10px;">
+		<a href="#" onclick="refresh();return false;"><img src="/images/ic_refresh_black_24dp_1x.png" alt="Refresh" style="float:right;" /></a>
+
+		<span style="display:inline-block;width:80px;">Exposure:</span> <select id="opt_exposure"></select><br />
+		<span style="display:inline-block;width:80px;">F:</span> <select id="opt_fnumber"></select><br />
+		<span style="display:inline-block;width:80px;">ISO:</span> <select id="opt_iso"></select><br />
+		<span style="display:inline-block;width:80px;">WB:</span> <select id="opt_wb"></select><br />
+
+	</div>
+	<script>
+		var params = {
+			"shutterspeed2": "opt_exposure",
+			"f-number": "opt_fnumber",
+			"iso": "opt_iso",
+			"whitebalance": "opt_wb"
+		};
+		var elements = {};
+		for(var key in params) {
+			elements[params[key]] = key;
+		}
+
+		var last_refreshed = null
+		function refresh() {
+			if(last_refreshed == null || new Date() - last_refreshed > 5000)
+			{
+				last_refreshed = new Date();
+
+				show_spinner();
+
+				for(var param in params) {
+
+					(function(p) {
+						$.getJSON("/api/get_config?name=" + p)
+							.done(function(data) {
+								if(!$("#" + params[p]).children().length && data && data.options) {
+									data.options.forEach(function(value, key) {
+										$("#" + params[p]).append($("<option></option>").text(value))
+									});
+								}
+
+								if(data && data.value) {
+									$("#" + params[p]).val(data.value);
+								}
+							})
+							.always(function() {
+									hide_spinner();
+							});
+					})(param);
+				}
+			}
+		}
+		refresh();
+
+		Object.keys(elements).forEach(function(id) {
+			$("#" + id).change(function() {
+				show_spinner();
+				$.getJSON("/api/set_config", {name: elements[id], value: $(this).val()})
+					.done(function(data) {
+						if(data && data.value) {
+							$("#" + id).val(data.value);
+						}
+					})
+					.always(function() {
+							hide_spinner();
+					});
+			});
+		});
+	</script>
+
+	<p>Shooting mode:</p>
+	<p>
+		<label><input type="radio" name="mode" value="0" class="mode" /> Focusing</label>
+		<label><input type="radio" name="mode" value="1" class="mode" /> Single shot</label>
+		<label><input type="radio" name="mode" value="2" class="mode" /> Bracket shot</label>
+		<label><input type="radio" name="mode" value="3" class="mode" /> Continuous shot</label>
+	</p>
+
+	<div class="mode0">
+		<h3>Preview</h3>
+		<button class="shoot_preview">Preview</button><br /><br />
+		<button class="shoot_zoom">-1000</button>
+		<button class="shoot_zoom">-500</button>
+		<button class="shoot_zoom">-100</button>
+		<button class="shoot_zoom">-50</button>
+		<button class="shoot_zoom">-10</button>
+		<button class="shoot_zoom">10</button>
+		<button class="shoot_zoom">50</button>
+		<button class="shoot_zoom">100</button>
+		<button class="shoot_zoom">500</button>
+		<button class="shoot_zoom">1000</button><br /><br />
+
+		<img class="preview" src="" style="max-width:1000px;max-height:750px;">
+		<script>
+			$(".shoot_preview").on("click", function() {
+				$("#spinner").show();
+				$.getJSON("/api/preview")
+					.done(function(data) {
+						if(data.success) {
+							$(".mode0 .preview").attr('src', '/output/preview.jpg?' + new Date().getTime());
+						}
+					})
+					.always(function() {
+							hide_spinner();
+					});
+			});
+			$(".shoot_zoom").on("click", function() {
+				if($(this).text() != "") {
+					$("#spinner").show();
+					$.getJSON("/api/zoom?step=" + $(this).text())
+						.done(function(data) {
+							if(data.success) {
+								$(".mode0 .preview").attr('src', '/output/preview.jpg?' + new Date().getTime());
+							}
+						})
+						.always(function() {
+							hide_spinner();
+						});
+				}
+			});
+		</script>
+	</div>
+	<div class="mode1">
+		<h3>Single Shot mode</h3>
+		<button class="shoot_single">SHOOT!</button>
+		<script>
+			$(".shoot_single").on("click", function() {
+				$.get("/api/shoot");
+			});
+		</script>
+	</div>
+	<div class="mode2">
+		<h3>Bracket shot</h3>
+	</div>
+	<div class="mode3">
+		<h3>Continuous shot</h3>
+		<button class="shoot_interval_start">START</button>
+		<button class="shoot_interval_stop">STOP</button>
+		<script>
+			$(".shoot_interval_start").on("click", function() {
+				$.getJSON("/api/start_interval");
+			});
+			$(".shoot_interval_stop").on("click", function() {
+				$.getJSON("/api/stop_interval");
+			});
+		</script>
+	</div>
+
+	<script>
+		$(function() {
+			for(i=0;i<=3;i++) {
+				$(".mode"+i).hide();
+			}
+
+			$(".mode").on("change", function() {
+				for(i=0;i<=3;i++) {
+					$(".mode"+i).hide();
+				}
+
+				if($(this).val() != "") {
+					$(".mode"+$(this).val()).show();
+				}
+			});
+		});
+	</script>
+</body>
+
+</html>

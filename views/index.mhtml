@@ -1,0 +1,17 @@
+<html>
+<head>
+	<title>Index</title>
+</head>
+<body>
+	<h1>Welcome!</h1>
+	{{#list}}
+	<p>{{.}}</p>
+	{{/list}}
+	{{#list}}
+	<a href="/capture">Continue to Capture</a>
+	{{/list}}
+	{{^list}}
+	<b>No cameras found!</b>
+	{{/list}}
+</body>
+</html>
