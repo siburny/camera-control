@@ -141,18 +141,31 @@
 			});
 		</script>
 	</div>
+
 	<div class="mode1">
 		<h3>Single Shot mode</h3>
-		<button class="shoot_single">SHOOT!</button>
+		<button class="shoot_single">SHOOT!</button><br />
+		<img class="preview" src="" style="max-width:1000px;max-height:750px;">
 		<script>
 			$(".shoot_single").on("click", function() {
-				$.get("/api/shoot");
+				show_spinner();
+				$.getJSON("/api/shoot")
+					.done(function(data) {
+						if(data.success) {
+							$(".mode1 .preview").attr('src', data.path + ".jpg");
+						}
+					})
+					.always(function() {
+						hide_spinner();
+					});
 			});
 		</script>
 	</div>
+
 	<div class="mode2">
 		<h3>Bracket shot</h3>
 	</div>
+
 	<div class="mode3">
 		<h3>Continuous shot</h3>
 		<button class="shoot_interval_start">START</button>

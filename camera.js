@@ -134,7 +134,12 @@ camera.get_config = function (name, callback) {
 
 					options = lines.filter(function (item) { return item != undefined && item.substr(0, 7) == "Choice:" })
 						.map(function (obj) {
-							return obj.substr(7).trim().split(" ", 2)[1];
+							line = words = obj.substr(7).trim();
+							if (line.indexOf(" ") > -1) {
+								return line.substr(line.indexOf(" ")).trim();
+							} else {
+								return "";
+							}
 						});
 					value = lines.filter(function (item) { return item != undefined && item.substr(0, 8) == "Current:" });
 
